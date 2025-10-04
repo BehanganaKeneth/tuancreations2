@@ -66,7 +66,7 @@ const Header = memo(() => {
           {/* Logo Section */}
           <Link to="/" className="flex items-center mr-8">
             <img
-              src="/logo-black copy copy.png"
+              src="/logo-black.png"
               alt="TUAN Logo"
               className="h-14 w-auto mr-3"
             />
