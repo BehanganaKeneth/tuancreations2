@@ -27,7 +27,7 @@ const HomePage = memo(() => {
       <section className="bg-indigo-700 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <img 
-            src="/logo-black copy copy.png" 
+            src="/logo-black.png" 
             alt="TUAN Logo" 
             className="h-16 w-auto mx-auto mb-6"
           />
