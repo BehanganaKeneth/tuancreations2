@@ -99,7 +99,7 @@ const HomePage = memo(() => {
       </section>
 
       {/* Call to Action */}
-      <section className="bg-indigo-700 text-white py-20">
+      <section className="bg-black text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-bold mb-6">Ready to Shape Africa's Future?</h2>
           <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
