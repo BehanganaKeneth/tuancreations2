@@ -1,5 +1,6 @@
 import React, { Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import LiveClassPage from "./pages/LiveClassPage";
 import { Layout } from "./bright-gold"; // 🎨 Use Bright Gold theme layout
 
 // Lazy load pages for better performance
