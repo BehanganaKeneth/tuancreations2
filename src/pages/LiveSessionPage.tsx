@@ -1,299 +1,374 @@
-import React, { useState, useCallback, memo, useEffect, useRef } from 'react';
-import { Video, Users, Send, Mic, MicOff, VideoIcon, VideoOff, Settings, MessageCircle } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-const LiveSessionPage = memo(() => {
-  const [chatMessages, setChatMessages] = useState([
-    {
-      id: 1,
-      sender: 'Eng. Godwin Ofwono',
-      message: 'Welcome everyone to our AI & Machine Learning session!',
-      time: '2:00 PM',
-      isInstructor: true
-    },
-    {
-      id: 2,
-      sender: 'Sarah Nakato',
-      message: 'Thank you for having us, excited to learn!',
-      time: '2:01 PM',
-      isInstructor: false
-    },
-    {
-      id: 3,
-      sender: 'James Okello',
-      message: 'Can you share the slides mentioned earlier?',
-      time: '2:03 PM',
-      isInstructor: false
-    },
-    {
-      id: 4,
-      sender: 'Eng. Godwin Ofwono',
-      message: 'Absolutely! I\'ll share them in the resources section after this demo.',
-      time: '2:04 PM',
-      isInstructor: true
-    },
-    {
-      id: 5,
-      sender: 'Grace Auma',
-      message: 'This neural network example is fascinating!',
-      time: '2:06 PM',
-      isInstructor: false
-    }
+/**
+ * LiveSessionPage.tsx
+ * Rewritten frontend for a browser-native live class platform (React + TypeScript + Tailwind).
+ *
+ * Notes:
+ * - This file focuses on frontend behavior and UI. Integration points for real-time media (Daily/Agora/Twilio)
+ *   and signalling (Socket.IO / WebSocket) are clearly marked with comments where you should plug your SDKs.
+ * - Recording, scheduling, notifications, and uploads require backend endpoints and provider keys.
+ * - Keep this file as a single-file preview for now; split into smaller components/files when integrating.
+ */
+
+type Role = "instructor" | "co-instructor" | "student" | "admin";
+
+type User = {
+  id: string;
+  name: string;
+  role: Role;
+  isOnline?: boolean;
+  isSpeaking?: boolean;
+};
+
+type ChatMessage = {
+  id: string | number;
+  senderId?: string;
+  senderName: string;
+  text: string;
+  time: string;
+  isInstructor?: boolean;
+};
+
+type SessionMeta = {
+  id: string;
+  title: string;
+  instructor: string;
+  topic?: string;
+  startTime?: string | null; // ISO string
+  durationMinutes?: number;
+  status: "scheduled" | "live" | "ended";
+  recordingUrl?: string | null;
+};
+
+const nowFormatted = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+export default function LiveSessionPage() {
+  // ----- demo/local state (replace with API/Socket/SDK integration) -----
+  const [currentUser, setCurrentUser] = useState<User>({
+    id: "u-you",
+    name: "You",
+    role: "student",
+    isOnline: true,
+  });
+
+  const [session, setSession] = useState<SessionMeta>({
+    id: "s-1",
+    title: "Advanced AI & Machine Learning for African Contexts",
+    instructor: "Eng. Godwin Ofwono",
+    topic: "Neural Networks and Deep Learning Applications",
+    startTime: null,
+    durationMinutes: 120,
+    status: "scheduled",
+    recordingUrl: null,
+  });
+
+  const [participants, setParticipants] = useState<User[]>([
+    { id: "u-1", name: "Eng. Godwin", role: "instructor", isOnline: true, isSpeaking: true },
+    { id: "u-2", name: "Eng. Cissyln", role: "co-instructor", isOnline: true },
+    { id: "u-3", name: "Sarah Nakato", role: "student", isOnline: true },
+    { id: "u-you", name: "You", role: "student", isOnline: true },
   ]);
 
-  const [newMessage, setNewMessage] = useState('');
-  const [isMuted, setIsMuted] = useState(true);
-  const [isVideoOff, setIsVideoOff] = useState(true);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    { id: 1, senderName: "Eng. Godwin", text: "Welcome everyone!", time: nowFormatted(), isInstructor: true },
+  ]);
+
+  const [newMessage, setNewMessage] = useState("");
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Media & room state
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
   const [isHandRaised, setIsHandRaised] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const [isRecording, setIsRecording] = useState(false);
 
-  const lectureDetails = {
-    title: 'Advanced AI & Machine Learning for African Contexts',
-    instructor: 'Eng. Godwin Ofwono & Eng. Cissyln Musiimenta',
-    course: 'Software & AI Development',
-    duration: '2 hours',
-    currentTime: '45 minutes',
-    topic: 'Neural Networks and Deep Learning Applications'
-  };
+  // Local UI
+  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
+  const [isUploadsOpen, setIsUploadsOpen] = useState(false);
 
-  const participants = [
-    { name: 'Eng. Godwin Ofwono', role: 'Instructor', isOnline: true, isSpeaking: true },
-    { name: 'Eng. Cissyln Musiimenta', role: 'Co-Instructor', isOnline: true, isSpeaking: false },
-    { name: 'Sarah Nakato', role: 'Student', isOnline: true, isSpeaking: false },
-    { name: 'James Okello', role: 'Student', isOnline: true, isSpeaking: false },
-    { name: 'Grace Auma', role: 'Student', isOnline: true, isSpeaking: false },
-    { name: 'David Ssemakula', role: 'Student', isOnline: true, isSpeaking: false },
-    { name: 'Mary Atim', role: 'Student', isOnline: false, isSpeaking: false },
-    { name: 'Peter Wanyama', role: 'Student', isOnline: true, isSpeaking: false },
-    { name: 'Ruth Nambi', role: 'Student', isOnline: true, isSpeaking: false },
-    { name: 'Moses Kiprotich', role: 'Student', isOnline: true, isSpeaking: false }
-  ];
+  // Placeholder for SDK client / connection
+  const sdkClientRef = useRef<any>(null);
+  const signallingSocketRef = useRef<WebSocket | null>(null);
 
-  const handleSendMessage = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    if (newMessage.trim()) {
-      const message = {
-        id: chatMessages.length + 1,
-        sender: 'You',
-        message: newMessage.trim(),
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isInstructor: false
-      };
-      setChatMessages(prev => [...prev, message]);
-      setNewMessage('');
-    }
-  }, [newMessage, chatMessages.length]);
-
-  const toggleMute = useCallback(() => {
-    setIsMuted(prev => !prev);
-  }, []);
-
-  const toggleVideo = useCallback(() => {
-    setIsVideoOff(prev => !prev);
-  }, []);
-
-  const toggleHandRaise = useCallback(() => {
-    setIsHandRaised(prev => !prev);
-  }, []);
-
-  // Auto-scroll chat to bottom when new messages arrive
+  // ----- Effects & helpers -----
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Auto-scroll chat to bottom
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
 
-  // Simulate new messages from instructor
   useEffect(() => {
-    const interval = setInterval(() => {
-      const instructorMessages = [
-        'Let\'s move on to the next concept...',
-        'Any questions about this implementation?',
-        'Great observation from the chat!',
-        'Remember to practice these algorithms at home.',
-        'We\'ll have a 5-minute break in a moment.'
-      ];
-      
-      if (Math.random() > 0.7) { // 30% chance every 10 seconds
-        const randomMessage = instructorMessages[Math.floor(Math.random() * instructorMessages.length)];
-        const message = {
-          id: Date.now(),
-          sender: 'Eng. Godwin Ofwono',
-          message: randomMessage,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isInstructor: true
-        };
-        setChatMessages(prev => [...prev, message]);
-      }
-    }, 10000);
+    // TODO: connect to signalling server here (Socket.IO or WebSocket)
+    // signallingSocketRef.current = new WebSocket("wss://your-signalling.example/ws");
+    // wire up events for presence, chat, and room state.
 
-    return () => clearInterval(interval);
+    // Cleanup
+    return () => {
+      if (signallingSocketRef.current) {
+        signallingSocketRef.current.close();
+      }
+    };
+  }, []);
+
+  // ----- Chat -----
+  const sendChat = useCallback(
+    (e?: React.FormEvent) => {
+      e?.preventDefault();
+      const text = newMessage.trim();
+      if (!text) return;
+      const msg: ChatMessage = {
+        id: Date.now(),
+        senderId: currentUser.id,
+        senderName: currentUser.name,
+        text,
+        time: nowFormatted(),
+        isInstructor: currentUser.role === "instructor" || currentUser.role === "co-instructor",
+      };
+
+      // Send over signalling / persist via API
+      // signallingSocketRef.current?.send(JSON.stringify({ type: 'chat', payload: msg }))
+
+      setChatMessages(prev => [...prev, msg]);
+      setNewMessage("");
+    },
+    [newMessage, currentUser]
+  );
+
+  // ----- Session control (instructor only) -----
+  const startSession = useCallback(async () => {
+    if (currentUser.role !== "instructor" && currentUser.role !== "co-instructor") return;
+
+    // 1) Call backend API to create a room / token for the chosen provider (Agora/Daily/Twilio)
+    // 2) Receive token + roomId, then initialize SDK client in browser and join the room
+    // 3) Optionally trigger provider-side recording (or instruct your server to start recording)
+
+    // Placeholder behavior for demo:
+    setSession(prev => ({ ...prev, status: "live", startTime: new Date().toISOString() }));
+    setIsRecording(true);
+
+    // TODO: initialize sdkClientRef.current = await initYourProviderClient({ token, roomId })
+  }, [currentUser]);
+
+  const endSession = useCallback(async () => {
+    if (currentUser.role !== "instructor" && currentUser.role !== "co-instructor") return;
+
+    // Tell provider to stop recording and finalize file; update session metadata in backend
+    setSession(prev => ({ ...prev, status: "ended" }));
+    setIsRecording(false);
+
+    // TODO: fetch recording URL and setSession(...recordingUrl...)
+  }, [currentUser]);
+
+  const joinSession = useCallback(async () => {
+    // Called by student to join a live room
+    // 1) Acquire token from backend
+    // 2) Initialize provider SDK and join room
+    // 3) Send presence to signalling server
+
+    // Demo: just set presence locally
+    setParticipants(prev => prev.map(p => (p.id === currentUser.id ? { ...p, isOnline: true } : p)));
+  }, [currentUser]);
+
+  // ----- Toggle media -----
+  const toggleMute = useCallback(() => setIsMuted(v => !v), []);
+  const toggleVideo = useCallback(() => setIsVideoOff(v => !v), []);
+  const toggleHand = useCallback(() => setIsHandRaised(v => !v), []);
+
+  // ----- Uploads (notes, slides) -----
+  const handleFileUpload = useCallback(async (file: File) => {
+    // Recommended: request presigned URL from backend and PUT the file to S3
+    // const presign = await fetch('/api/uploads/presign', { method: 'POST', body: JSON.stringify({ name: file.name }) })
+    // const { url } = await presign.json();
+    // await fetch(url, { method: 'PUT', body: file });
+
+    // After upload, notify backend and update uploads list for session
+    console.log('upload', file.name);
+  }, []);
+
+  // ----- UI derived data -----
+  const onlineCount = useMemo(() => participants.filter(p => p.isOnline).length, [participants]);
+
+  // ----- simple scheduler helper for demo -----
+  const scheduleSession = useCallback((isoDate: string) => {
+    setSession(prev => ({ ...prev, startTime: isoDate, status: "scheduled" }));
+    setIsSchedulerOpen(false);
+    // TODO: call backend to persist schedule and queue notifications
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 p-4">
+      <header className="bg-gray-900/60 border-b border-gray-800 p-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold">{lectureDetails.title}</h1>
-            <p className="text-gray-400 text-sm">
-              {lectureDetails.instructor} • {lectureDetails.currentTime} of {lectureDetails.duration}
-            </p>
+            <h1 className="text-xl font-bold">{session.title}</h1>
+            <p className="text-sm text-gray-300">{session.instructor} • {session.topic}</p>
+            <p className="text-xs text-gray-400">{session.status === 'live' ? `Live — started at ${session.startTime ? new Date(session.startTime).toLocaleTimeString() : ''}` : session.status === 'scheduled' && session.startTime ? `Scheduled: ${new Date(session.startTime).toLocaleString()}` : 'Not started yet'}</p>
           </div>
-          <div className="flex items-center space-x-2">
-            <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-              🔴 LIVE
-            </span>
-            <span className="text-gray-400">{participants.filter(p => p.isOnline).length} participants</span>
+
+          <div className="flex items-center space-x-3">
+            <span className="px-3 py-1 rounded-full text-sm bg-red-600">🔴 LIVE</span>
+            <div className="text-sm text-gray-300">{onlineCount} online</div>
+
+            {/* Instructor controls */}
+            {(currentUser.role === 'instructor' || currentUser.role === 'co-instructor') && (
+              <div className="flex items-center space-x-2">
+                {session.status !== 'live' ? (
+                  <button onClick={startSession} className="px-3 py-1 rounded bg-yellow-600 text-black font-medium">Start Session</button>
+                ) : (
+                  <button onClick={endSession} className="px-3 py-1 rounded bg-red-700 text-white font-medium">End Session</button>
+                )}
+                <button onClick={() => setIsSchedulerOpen(true)} className="px-3 py-1 rounded bg-gray-800">Schedule</button>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-120px)]">
-          {/* Main Video Area */}
-          <div className="lg:col-span-3 flex flex-col">
-            {/* Video Player */}
-            <div className="bg-black rounded-lg overflow-hidden flex-1 relative">
-              <iframe
-                src="https://www.youtube.com/embed/aircAruvnKk?autoplay=1&mute=1&controls=1&rel=0"
-                title="Neural Networks Explained"
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-              
-              {/* Video Overlay Info */}
-              <div className="absolute top-4 left-4 bg-black bg-opacity-70 rounded-lg p-3">
-                <h3 className="font-semibold text-sm">{lectureDetails.topic}</h3>
-                <p className="text-xs text-gray-300">Current Topic</p>
-              </div>
-
-              {/* Instructor Video (Picture-in-Picture) */}
-              <div className="absolute bottom-4 right-4 w-48 h-32 bg-gray-800 rounded-lg border-2 border-teal-500 overflow-hidden">
-                <img
-                  src="https://images.pexels.com/photos/3184433/pexels-photo-3184433.jpeg?auto=compress&cs=tinysrgb&w=300"
-                  alt="Instructor"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 rounded px-2 py-1">
-                  <span className="text-xs font-medium">Eng. Godwin</span>
+      <main className="max-w-7xl mx-auto p-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-140px)]">
+          {/* Video + Controls */}
+          <section className="lg:col-span-3 flex flex-col gap-4">
+            <div className="bg-black rounded-lg overflow-hidden flex-1 relative border border-gray-800">
+              {/*
+                VIDEO AREA
+                Replace the iframe below by your provider's <Video/> component or attach local tracks via WebRTC.
+              */}
+              {session.status === 'live' ? (
+                // TODO: Replace with actual provider player component
+                <div className="w-full h-full flex items-center justify-center text-gray-400"> 
+                  <p className="text-center">Live video stream (provider SDK goes here)</p>
                 </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center p-4 text-center text-gray-400">
+                  <div>
+                    <p className="mb-2">Session is not live yet.</p>
+                    {session.startTime ? (
+                      <p className="text-sm">Scheduled to start at <strong>{new Date(session.startTime).toLocaleString()}</strong></p>
+                    ) : (
+                      <p className="text-sm">No schedule set.</p>
+                    )}
+                    <div className="mt-3 flex justify-center space-x-2">
+                      <button onClick={() => {/* subscribe to notifications via API */}} className="px-3 py-1 rounded bg-teal-600 text-white">Subscribe</button>
+                      <button onClick={joinSession} className="px-3 py-1 rounded bg-gray-800">Join Anyway</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* small pip instructor */}
+              <div className="absolute bottom-4 right-4 w-52 h-36 rounded-lg bg-gray-900 border border-gray-700 overflow-hidden flex items-end">
+                <img src="https://images.pexels.com/photos/3184433/pexels-photo-3184433.jpeg?auto=compress&cs=tinysrgb&w=300" alt="Instructor" className="w-full h-full object-cover" />
+                <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 rounded text-xs">{session.instructor}</div>
               </div>
             </div>
 
             {/* Controls */}
-            <div className="bg-gray-800 rounded-lg mt-4 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <button
-                    onClick={toggleMute}
-                    className={`p-3 rounded-full ${isMuted ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-600 hover:bg-gray-700'} transition-colors`}
-                  >
-                    {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                  </button>
-                  <button
-                    onClick={toggleVideo}
-                    className={`p-3 rounded-full ${isVideoOff ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-600 hover:bg-gray-700'} transition-colors`}
-                  >
-                    {isVideoOff ? <VideoOff className="w-5 h-5" /> : <VideoIcon className="w-5 h-5" />}
-                  </button>
-                  <button
-                    onClick={toggleHandRaise}
-                    className={`px-4 py-2 rounded-lg ${isHandRaised ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-gray-600 hover:bg-gray-700'} transition-colors text-sm font-medium`}
-                  >
-                    {isHandRaised ? '✋ Hand Raised' : 'Raise Hand'}
-                  </button>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button className="p-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition-colors">
-                    <Settings className="w-5 h-5" />
-                  </button>
-                </div>
+            <div className="bg-gray-900 rounded-lg p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button onClick={toggleMute} className={`px-3 py-2 rounded ${isMuted ? 'bg-red-600' : 'bg-gray-800'}`}>{isMuted ? 'Unmute' : 'Mute'}</button>
+                <button onClick={toggleVideo} className={`px-3 py-2 rounded ${isVideoOff ? 'bg-red-600' : 'bg-gray-800'}`}>{isVideoOff ? 'Start Video' : 'Stop Video'}</button>
+                <button onClick={toggleHand} className={`px-3 py-2 rounded ${isHandRaised ? 'bg-yellow-600 text-black' : 'bg-gray-800'}`}>{isHandRaised ? 'Lower Hand' : 'Raise Hand'}</button>
+                <button onClick={() => setIsUploadsOpen(v => !v)} className="px-3 py-2 rounded bg-gray-800">Uploads</button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="text-sm text-gray-300">Recording: {isRecording ? 'ON' : 'OFF'}</div>
+                <button onClick={() => setIsRecording(v => !v)} className="px-3 py-2 rounded bg-gray-800">Toggle Recording</button>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-1 flex flex-col space-y-4">
-            {/* Participants */}
-            <div className="bg-gray-800 rounded-lg p-4 flex-1">
-              <div className="flex items-center space-x-2 mb-4">
-                <Users className="w-5 h-5 text-teal-400" />
-                <h3 className="font-semibold">Participants ({participants.filter(p => p.isOnline).length})</h3>
+          {/* Sidebar: Participants + Chat */}
+          <aside className="lg:col-span-1 flex flex-col gap-4">
+            <div className="bg-gray-900 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold">Participants ({onlineCount})</h3>
+                <button className="text-sm text-gray-400">Manage</button>
               </div>
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {participants.map((participant, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-gray-700">
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-2 h-2 rounded-full ${participant.isOnline ? 'bg-green-400' : 'bg-gray-500'}`} />
-                      <span className="text-sm">{participant.name}</span>
-                      {participant.isSpeaking && (
-                        <div className="w-2 h-2 bg-teal-400 rounded-full animate-pulse" />
-                      )}
+                {participants.map(p => (
+                  <div key={p.id} className="flex items-center justify-between p-2 rounded bg-gray-800">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${p.isOnline ? 'bg-green-400' : 'bg-gray-600'}`} />
+                      <div className="text-sm">{p.name}</div>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      participant.role === 'Instructor' || participant.role === 'Co-Instructor' 
-                        ? 'bg-teal-600 text-teal-100' 
-                        : 'bg-gray-600 text-gray-300'
-                    }`}>
-                      {participant.role}
-                    </span>
+                    <div className={`text-xs px-2 py-0.5 rounded ${p.role === 'instructor' ? 'bg-teal-600 text-black' : 'bg-gray-700 text-gray-200'}`}>{p.role}</div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Chat */}
-            <div className="bg-gray-800 rounded-lg p-4 flex-1 flex flex-col">
-              <div className="flex items-center space-x-2 mb-4">
-                <MessageCircle className="w-5 h-5 text-teal-400" />
+            <div className="bg-gray-900 rounded-lg p-4 flex-1 flex flex-col">
+              <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold">Chat</h3>
+                <div className="text-xs text-gray-400">Live</div>
               </div>
-              
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto space-y-3 mb-4 max-h-64">
-                {chatMessages.map((message) => (
-                  <div key={message.id} className="text-sm">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <span className={`font-medium ${message.isInstructor ? 'text-teal-400' : 'text-gray-300'}`}>
-                        {message.sender}
-                      </span>
-                      <span className="text-xs text-gray-500">{message.time}</span>
-                      {message.isInstructor && (
-                        <span className="bg-teal-600 text-teal-100 text-xs px-1 py-0.5 rounded">
-                          Instructor
-                        </span>
-                      )}
+
+              <div className="flex-1 overflow-y-auto space-y-3 mb-3 max-h-64">
+                {chatMessages.map(m => (
+                  <div key={m.id} className="text-sm">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`font-medium ${m.isInstructor ? 'text-teal-300' : 'text-gray-300'}`}>{m.senderName}</span>
+                      <span className="text-xs text-gray-500">{m.time}</span>
                     </div>
-                    <p className="text-gray-200 pl-2 border-l-2 border-gray-600">{message.message}</p>
+                    <div className="pl-2 border-l-2 border-gray-700 text-gray-200">{m.text}</div>
                   </div>
                 ))}
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Message Input */}
-              <form onSubmit={handleSendMessage} className="flex space-x-2">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type a message..."
-                  className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
-                <button
-                  type="submit"
-                  className="bg-teal-600 hover:bg-teal-700 rounded-lg px-3 py-2 transition-colors"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
+              <form onSubmit={sendChat} className="flex gap-2">
+                <input value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Type a message..." className="flex-1 bg-gray-800 rounded px-3 py-2 text-sm focus:outline-none" />
+                <button type="submit" className="px-3 py-2 rounded bg-teal-600">Send</button>
               </form>
+            </div>
+
+            <div className="bg-gray-900 rounded-lg p-3">
+              <h4 className="text-sm font-semibold mb-2">Recordings & Resources</h4>
+              {session.recordingUrl ? (
+                <a href={session.recordingUrl} target="_blank" rel="noreferrer" className="text-sm text-teal-400 underline">Watch recording</a>
+              ) : (
+                <div className="text-xs text-gray-400">No recordings yet.</div>
+              )}
+
+              <div className="mt-3">
+                <button onClick={() => {/* show all resources */}} className="text-sm px-3 py-1 rounded bg-gray-800">View Files</button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </main>
+
+      {/* Scheduler Modal (simple) */}
+      {isSchedulerOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-gray-900 rounded-lg p-6 w-full max-w-md">
+            <h3 className="font-semibold mb-3">Schedule Session</h3>
+            <label className="text-xs text-gray-400">Start time</label>
+            <input type="datetime-local" className="w-full bg-gray-800 rounded px-3 py-2 mb-4" id="sched-input" />
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setIsSchedulerOpen(false)} className="px-3 py-1 rounded bg-gray-700">Cancel</button>
+              <button onClick={() => {
+                const input = (document.getElementById('sched-input') as HTMLInputElement | null)?.value;
+                if (input) scheduleSession(new Date(input).toISOString());
+              }} className="px-3 py-1 rounded bg-teal-600">Save</button>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Uploads drawer (very simple) */}
+      {isUploadsOpen && (
+        <div className="fixed right-4 bottom-4 w-80 bg-gray-900 border border-gray-800 rounded-lg p-4">
+          <h4 className="font-semibold mb-2">Upload Files</h4>
+          <input type="file" className="mb-2" onChange={e => { if (e.target.files?.[0]) handleFileUpload(e.target.files[0]); }} />
+          <div className="text-xs text-gray-400">Upload slides, notes, or links for this session.</div>
+          <div className="flex justify-end mt-3">
+            <button onClick={() => setIsUploadsOpen(false)} className="px-3 py-1 rounded bg-gray-700">Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
-});
-
-LiveSessionPage.displayName = 'LiveSessionPage';
-
-export default LiveSessionPage;
+}
