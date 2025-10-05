@@ -6,8 +6,6 @@ export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
-      // Treat these modules as external to avoid Rollup resolution issues on Netlify
-      external: ['react-select', 'react-select-country-list'],
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
@@ -19,6 +17,7 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    exclude: ['lucide-react', 'react-select', 'react-select-country-list'],
+    // Only exclude modules that cause hot reload issues, keep react-select bundled
+    exclude: ['lucide-react'],
   },
 });
