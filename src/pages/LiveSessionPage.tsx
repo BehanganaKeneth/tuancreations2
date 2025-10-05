@@ -1,6 +1,32 @@
 import React, { useState } from "react";
-import { User, Clock, Globe } from "lucide-react";
+import { Globe } from "lucide-react";
 
+// Dummy data: upcoming live sessions
+const upcomingSessions = [
+  {
+    id: 1,
+    title: "Introduction to Data Structures",
+    instructor: "Dr. John Kato",
+    date: "2025-10-07",
+    time: "10:00 AM",
+  },
+  {
+    id: 2,
+    title: "Advanced Networking Class",
+    instructor: "Eng. Behangana Keneth",
+    date: "2025-10-08",
+    time: "2:00 PM",
+  },
+  {
+    id: 3,
+    title: "AI and Machine Learning Basics",
+    instructor: "Prof. Sarah Namusoke",
+    date: "2025-10-10",
+    time: "9:00 AM",
+  },
+];
+
+// List of countries with dial codes
 const countryCodes = [
   { code: "+256", country: "Uganda" },
   { code: "+254", country: "Kenya" },
@@ -11,157 +37,98 @@ const countryCodes = [
   { code: "+27", country: "South Africa" },
 ];
 
-interface Lecture {
-  isLive: boolean;
-  title: string;
-  instructor: string;
-  startTime?: string;
-}
-
-interface UpcomingSession {
-  title: string;
-  instructor: string;
-  startTime: string;
-}
-
-interface Props {
-  lectureDetails: Lecture;
-  upcomingSessions?: UpcomingSession[];
-}
-
-const LiveSessionPage: React.FC<Props> = ({
-  lectureDetails,
-  upcomingSessions = [],
-}) => {
+const LiveClassPage: React.FC = () => {
   const [isSubscribeOpen, setIsSubscribeOpen] = useState(false);
+  const [countryCode, setCountryCode] = useState("+256");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [countryCode, setCountryCode] = useState("+256");
   const [message, setMessage] = useState("");
-  const [selectedSession, setSelectedSession] = useState<string>("Next Live Session");
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Handle subscribe form
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     setMessage("");
 
     try {
-      const response = await fetch("/api/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          phone: `${countryCode}${phone}`,
-          session: selectedSession,
-        }),
-      });
+      // You can connect this to a real backend later
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      if (response.ok) {
-        setMessage("✅ Subscribed successfully! You’ll get a notification before the session starts.");
-        setEmail("");
-        setPhone("");
-      } else {
-        setMessage("❌ Failed to subscribe. Please try again.");
-      }
-    } catch (error) {
-      setMessage("⚠️ Network error. Please try again.");
+      setMessage("✅ Subscription successful! You’ll be notified when the next session starts.");
+      setEmail("");
+      setPhone("");
+    } catch (err) {
+      setMessage("⚠️ Something went wrong. Try again.");
     }
 
-    setLoading(false);
+    setSubmitting(false);
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white px-6 py-10">
-      {/* Current Session Section */}
-      <section className="max-w-4xl mx-auto bg-gray-800 rounded-2xl shadow-lg p-8">
-        <h1 className="text-2xl font-bold">{lectureDetails.title}</h1>
-        <p className="text-gray-300 mt-1">
-          Instructor: <span className="font-semibold text-teal-400">{lectureDetails.instructor}</span>
-        </p>
+    <div className="min-h-screen bg-gray-900 text-white p-8">
+      <h1 className="text-3xl font-bold mb-4">🎥 Live Classes</h1>
+      <p className="text-gray-300 mb-8">
+        Attend live lectures directly on this platform. Subscribe to get instant notifications when a session starts.
+      </p>
 
-        {lectureDetails.isLive ? (
-          <div className="mt-3 text-red-500 font-semibold">🔴 Currently Live</div>
-        ) : (
-          <div className="mt-3 text-gray-400">No live session right now.</div>
-        )}
+      {/* Next Live Sessions */}
+      <div className="bg-gray-800 p-6 rounded-xl shadow-lg mb-8">
+        <h2 className="text-xl font-semibold mb-4 text-teal-400">📅 Upcoming Live Sessions</h2>
 
-        {!lectureDetails.isLive && (
-          <button
-            onClick={() => {
-              setSelectedSession("Next Live Session");
-              setIsSubscribeOpen(true);
-            }}
-            className="mt-6 bg-teal-600 hover:bg-teal-700 transition-colors px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
-          >
-            <Globe className="w-4 h-4" />
-            Subscribe for Next Session
-          </button>
-        )}
-      </section>
-
-      {/* Upcoming Sessions Section */}
-      {!lectureDetails.isLive && upcomingSessions.length > 0 && (
-        <section className="max-w-4xl mx-auto mt-10 bg-gray-800 rounded-2xl shadow-lg p-8">
-          <h2 className="text-xl font-semibold mb-4">📅 Upcoming Live Sessions</h2>
-
-          <div className="space-y-4">
-            {upcomingSessions.map((session, idx) => (
-              <div
-                key={idx}
-                className="flex flex-col md:flex-row md:items-center md:justify-between bg-gray-700 p-4 rounded-xl"
+        {upcomingSessions.length > 0 ? (
+          <ul className="space-y-3">
+            {upcomingSessions.map((session) => (
+              <li
+                key={session.id}
+                className="bg-gray-700 p-4 rounded-lg flex justify-between items-center"
               >
                 <div>
-                  <h3 className="font-bold text-lg">{session.title}</h3>
-                  <p className="text-gray-300 flex items-center mt-1">
-                    <User className="w-4 h-4 mr-2" />
-                    {session.instructor}
+                  <h3 className="text-lg font-semibold">{session.title}</h3>
+                  <p className="text-sm text-gray-300">
+                    By <span className="text-teal-400">{session.instructor}</span>
                   </p>
-                  <p className="text-gray-400 flex items-center mt-1 text-sm">
-                    <Clock className="w-4 h-4 mr-2" />
-                    {new Date(session.startTime).toLocaleString()}
+                  <p className="text-xs text-gray-400">
+                    {session.date} at {session.time}
                   </p>
                 </div>
-
-                <button
-                  onClick={() => {
-                    setSelectedSession(session.title);
-                    setIsSubscribeOpen(true);
-                  }}
-                  className="mt-4 md:mt-0 bg-teal-600 hover:bg-teal-700 transition-colors px-4 py-2 rounded-lg text-sm font-medium"
-                >
-                  Notify Me
+                <button className="bg-teal-600 hover:bg-teal-700 px-3 py-2 rounded-lg text-sm">
+                  View Details
                 </button>
-              </div>
+              </li>
             ))}
-          </div>
-        </section>
-      )}
+          </ul>
+        ) : (
+          <p className="text-gray-400">No upcoming sessions yet.</p>
+        )}
+      </div>
+
+      {/* Subscribe Button */}
+      <button
+        onClick={() => setIsSubscribeOpen(true)}
+        className="bg-teal-600 hover:bg-teal-700 px-6 py-3 rounded-lg flex items-center space-x-2"
+      >
+        <Globe className="w-5 h-5" />
+        <span>Subscribe for Notifications</span>
+      </button>
 
       {/* Subscription Modal */}
       {isSubscribeOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50">
-          <div className="bg-gray-800 rounded-xl shadow-lg p-6 max-w-md w-full">
-            <h2 className="text-lg font-bold mb-4">
-              Subscribe for <span className="text-teal-400">{selectedSession}</span>
-            </h2>
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Subscribe for Notifications</h2>
 
             <form onSubmit={handleSubscribe} className="space-y-4">
-              {/* Email */}
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Email Address</label>
+                <label className="block text-sm text-gray-300 mb-1">Email</label>
                 <input
                   type="email"
                   value={email}
                   required
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  placeholder="your@email.com"
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
 
-              {/* Phone */}
               <div>
                 <label className="block text-sm text-gray-300 mb-1">Phone Number</label>
                 <div className="flex space-x-2">
@@ -181,19 +148,15 @@ const LiveSessionPage: React.FC<Props> = ({
                     value={phone}
                     required
                     onChange={(e) => setPhone(e.target.value)}
-                    className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                     placeholder="712345678"
+                    className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
               </div>
 
-              {/* Message */}
-              {message && (
-                <p className="text-sm text-gray-300 mt-2">{message}</p>
-              )}
+              {message && <p className="text-sm text-gray-300">{message}</p>}
 
-              {/* Buttons */}
-              <div className="flex justify-between items-center mt-4">
+              <div className="flex justify-between items-center">
                 <button
                   type="button"
                   onClick={() => setIsSubscribeOpen(false)}
@@ -203,10 +166,10 @@ const LiveSessionPage: React.FC<Props> = ({
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="bg-teal-600 hover:bg-teal-700 transition-colors px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60"
+                  disabled={submitting}
+                  className="bg-teal-600 hover:bg-teal-700 px-4 py-2 rounded-lg text-sm disabled:opacity-50"
                 >
-                  {loading ? "Subscribing..." : "Subscribe"}
+                  {submitting ? "Subscribing..." : "Subscribe"}
                 </button>
               </div>
             </form>
@@ -217,4 +180,4 @@ const LiveSessionPage: React.FC<Props> = ({
   );
 };
 
-export default LiveSessionPage;
+export default LiveClassPage;
