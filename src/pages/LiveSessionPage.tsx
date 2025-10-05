@@ -27,10 +27,12 @@ type SessionMeta = {
   title: string;
   instructor: string;
   topic?: string;
-  startTime?: string | null; // ISO string
+  startTime?: string | null;
   durationMinutes?: number;
   status: "scheduled" | "live" | "ended";
   recordingUrl?: string | null;
+  resources?: { title: string; url: string }[];
+  previousSessions?: { title: string; recordingUrl: string }[];
 };
 
 const nowFormatted = () =>
@@ -38,7 +40,7 @@ const nowFormatted = () =>
 
 export default function LiveSessionPage() {
   // ----- demo/local state -----
-  const [currentUser] = useState<User>({
+  const [currentUser, setCurrentUser] = useState<User>({
     id: "u-you",
     name: "You",
     role: "student",
@@ -50,13 +52,21 @@ export default function LiveSessionPage() {
     title: "Advanced AI & Machine Learning",
     instructor: "Eng. Godwin Ofwono",
     topic: "Neural Networks and Deep Learning",
-    startTime: new Date(Date.now() + 1000 * 60 * 1).toISOString(), // 1 min from now
+    startTime: new Date(Date.now() + 1000 * 60 * 2).toISOString(), // 2 min later
     durationMinutes: 120,
     status: "scheduled",
     recordingUrl: null,
+    resources: [
+      { title: "Lecture Slides", url: "/resources/slides.pdf" },
+      { title: "Reference Paper", url: "/resources/paper.pdf" },
+    ],
+    previousSessions: [
+      { title: "Intro to AI", recordingUrl: "/recordings/session1.mp4" },
+      { title: "Machine Learning Basics", recordingUrl: "/recordings/session2.mp4" },
+    ],
   });
 
-  const [participants] = useState<User[]>([
+  const [participants, setParticipants] = useState<User[]>([
     { id: "u-1", name: "Eng. Godwin", role: "instructor", isOnline: true, isSpeaking: true },
     { id: "u-2", name: "Eng. Cissyln", role: "co-instructor", isOnline: true },
     { id: "u-3", name: "Sarah Nakato", role: "student", isOnline: true },
@@ -70,14 +80,14 @@ export default function LiveSessionPage() {
   const [newMessage, setNewMessage] = useState("");
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
-  // ----- Media Controls -----
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isHandRaised, setIsHandRaised] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
 
-  // ----- Notifications -----
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  // ----- Notification subscription -----
   const [email, setEmail] = useState("");
   const [countryCode, setCountryCode] = useState<{ label: string; value: string } | null>(null);
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -96,12 +106,10 @@ export default function LiveSessionPage() {
       showToast("error", "Please fill all fields");
       return;
     }
-
     console.log({ email, phone: `${countryCode.value}${phoneNumber}` });
-
     setSubscribed(true);
-    setShowSubscribeOverlay(false);
     showToast("success", "Subscribed for live notifications!");
+    setShowSubscribeOverlay(false);
   }, [email, phoneNumber, countryCode, showToast]);
 
   // ----- Chat -----
@@ -128,39 +136,45 @@ export default function LiveSessionPage() {
     [newMessage, currentUser]
   );
 
+  // ----- Toggle media -----
+  const toggleMute = useCallback(() => setIsMuted((v) => !v), []);
+  const toggleVideo = useCallback(() => setIsVideoOff((v) => !v), []);
+  const toggleHand = useCallback(() => setIsHandRaised((v) => !v), []);
+
   // ----- Countdown -----
-  const [countdown, setCountdown] = useState<number>(0);
+  const [countdown, setCountdown] = useState<number>(
+    session.startTime ? Math.max(Math.floor((new Date(session.startTime).getTime() - Date.now()) / 1000), 0) : 0
+  );
+
   useEffect(() => {
-    if (!session.startTime) return;
-    const start = new Date(session.startTime).getTime();
-    const interval = setInterval(() => {
-      const diff = Math.max(0, start - Date.now());
-      setCountdown(Math.ceil(diff / 1000));
-      if (diff <= 0) {
-        clearInterval(interval);
-        setSession((s) => ({ ...s, status: "live" }));
-      }
-    }, 500);
-    return () => clearInterval(interval);
-  }, [session.startTime]);
+    if (countdown <= 0) {
+      setShowSubscribeOverlay(false);
+      setSession((s) => ({ ...s, status: "live" }));
+      return;
+    }
+    const timer = setInterval(() => setCountdown((c) => c - 1), 1000);
+    return () => clearInterval(timer);
+  }, [countdown]);
+
+  const formatCountdown = (sec: number) => {
+    const minutes = Math.floor(sec / 60);
+    const seconds = sec % 60;
+    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  };
 
   const onlineCount = useMemo(() => participants.filter((p) => p.isOnline).length, [participants]);
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white flex flex-col">
       {/* Header */}
       <header className="bg-gray-900/60 border-b border-gray-800 p-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold">{session.title}</h1>
             <p className="text-sm text-gray-300">{session.instructor} • {session.topic}</p>
-            <p className="text-xs text-gray-400">
-              {session.status === "live"
-                ? `Live — started at ${session.startTime ? new Date(session.startTime).toLocaleTimeString() : ""}`
-                : session.status === "scheduled" && session.startTime
-                ? `Next session: ${new Date(session.startTime).toLocaleString()}`
-                : "Not started yet"}
-            </p>
+            {session.status !== "live" && session.startTime && (
+              <p className="text-xs text-gray-400">Next session starts: {new Date(session.startTime).toLocaleString()}</p>
+            )}
           </div>
           <div className="flex items-center space-x-3">
             {session.status === "live" && <span className="px-3 py-1 rounded-full text-sm bg-red-600">🔴 LIVE</span>}
@@ -169,80 +183,95 @@ export default function LiveSessionPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-140px)]">
-          {/* Video + Controls */}
-          <section className="lg:col-span-3 flex flex-col gap-4 relative">
-            <div className="bg-black rounded-lg overflow-hidden flex-1 border border-gray-800 relative flex items-center justify-center">
-              {session.status !== "live" ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/80 z-10 text-center px-4">
-                  <p className="text-lg">Session has not started yet</p>
-                  <p className="text-3xl font-bold">{countdown}s</p>
-                  {showSubscribeOverlay && !subscribed && (
-                    <div className="bg-gray-900 rounded-lg p-3 flex flex-col gap-2 w-full max-w-xs mx-auto relative">
-                      <button
-                        className="absolute top-1 right-1 text-gray-400 hover:text-gray-100"
-                        onClick={() => setShowSubscribeOverlay(false)}
-                      >
-                        <X size={16} />
-                      </button>
-                      <h4 className="text-sm font-semibold mb-2">Subscribe for Live Notifications</h4>
-                      <input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-gray-800 rounded px-3 py-2 text-sm focus:outline-none mb-2"
-                      />
-                      <div className="flex gap-2">
-                        <div className="flex-1">
-                          <Select
-                            options={countries}
-                            value={countryCode}
-                            onChange={(value) => setCountryCode(value)}
-                            placeholder={<div className="flex items-center gap-1"><Globe size={14}/> Country</div>}
-                            className="text-black"
-                          />
-                        </div>
-                        <input
-                          type="tel"
-                          placeholder="Phone number"
-                          value={phoneNumber}
-                          onChange={(e) => setPhoneNumber(e.target.value)}
-                          className="flex-1 bg-gray-800 rounded px-3 py-2 text-sm focus:outline-none"
-                        />
-                      </div>
-                      <button
-                        onClick={subscribeNotifications}
-                        className="px-3 py-2 rounded bg-teal-600 mt-2"
-                      >
-                        Subscribe
-                      </button>
-                    </div>
-                  )}
-                </div>
+      {/* Main */}
+      <main className="flex-1 max-w-7xl mx-auto p-2 lg:p-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(100vh-72px)]">
+          {/* Video + Overlay */}
+          <section className="lg:col-span-3 relative flex flex-col">
+            <div className="flex-1 bg-black rounded-lg overflow-hidden border border-gray-800 flex items-center justify-center text-gray-400">
+              {session.status === "live" ? (
+                <p>Live video stream (provider SDK goes here)</p>
               ) : (
-                <p className="text-gray-400">Live video stream (provider SDK goes here)</p>
+                <div className="text-center">
+                  <p className="mb-2">Session is not live yet.</p>
+                  {countdown > 0 && <p className="text-xl font-bold">{formatCountdown(countdown)}</p>}
+                </div>
+              )}
+
+              {/* Subscribe Overlay */}
+              {showSubscribeOverlay && session.status !== "live" && (
+                <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center p-4 rounded-lg">
+                  <button
+                    onClick={() => setShowSubscribeOverlay(false)}
+                    className="absolute top-2 right-2 text-gray-300 hover:text-white"
+                  >
+                    <X size={20} />
+                  </button>
+                  <h4 className="text-lg font-semibold mb-2">Subscribe for Live Notifications</h4>
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full max-w-xs mb-2 px-3 py-2 rounded text-black"
+                  />
+                  <div className="flex gap-2 max-w-xs w-full">
+                    <div className="flex-1">
+                      <Select
+                        options={countries}
+                        value={countryCode}
+                        onChange={(v) => setCountryCode(v)}
+                        placeholder={<div className="flex items-center gap-1"><Globe size={14}/> Country</div>}
+                        className="text-black"
+                      />
+                    </div>
+                    <input
+                      type="tel"
+                      placeholder="Phone number"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      className="flex-1 px-3 py-2 rounded text-black"
+                    />
+                  </div>
+                  <button
+                    onClick={subscribeNotifications}
+                    className="mt-3 px-4 py-2 bg-teal-600 rounded"
+                  >
+                    Subscribe
+                  </button>
+                </div>
               )}
             </div>
 
             {/* Controls */}
             {session.status === "live" && (
-              <div className="bg-gray-900 rounded-lg p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setIsMuted((v) => !v)} className={`px-3 py-2 rounded ${isMuted ? "bg-red-600" : "bg-gray-800"}`}>
+              <div className="bg-gray-900 rounded-lg p-3 mt-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={toggleMute}
+                    className={`px-3 py-2 rounded ${isMuted ? "bg-red-600" : "bg-gray-800"}`}
+                  >
                     {isMuted ? "Unmute" : "Mute"}
                   </button>
-                  <button onClick={() => setIsVideoOff((v) => !v)} className={`px-3 py-2 rounded ${isVideoOff ? "bg-red-600" : "bg-gray-800"}`}>
+                  <button
+                    onClick={toggleVideo}
+                    className={`px-3 py-2 rounded ${isVideoOff ? "bg-red-600" : "bg-gray-800"}`}
+                  >
                     {isVideoOff ? "Start Video" : "Stop Video"}
                   </button>
-                  <button onClick={() => setIsHandRaised((v) => !v)} className={`px-3 py-2 rounded ${isHandRaised ? "bg-yellow-600 text-black" : "bg-gray-800"}`}>
+                  <button
+                    onClick={toggleHand}
+                    className={`px-3 py-2 rounded ${isHandRaised ? "bg-yellow-600 text-black" : "bg-gray-800"}`}
+                  >
                     {isHandRaised ? "Lower Hand" : "Raise Hand"}
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="text-sm text-gray-300">Recording: {isRecording ? "ON" : "OFF"}</div>
-                  <button onClick={() => setIsRecording((v) => !v)} className="px-3 py-2 rounded bg-gray-800">
+                  <button
+                    onClick={() => setIsRecording((v) => !v)}
+                    className="px-3 py-2 rounded bg-gray-800"
+                  >
                     Toggle Recording
                   </button>
                 </div>
@@ -251,7 +280,7 @@ export default function LiveSessionPage() {
           </section>
 
           {/* Sidebar */}
-          <aside className="lg:col-span-1 flex flex-col gap-4">
+          <aside className="lg:col-span-1 flex flex-col gap-4 overflow-y-auto">
             {/* Participants */}
             <div className="bg-gray-900 rounded-lg p-4">
               <h3 className="font-semibold mb-2">Participants ({onlineCount})</h3>
@@ -262,7 +291,11 @@ export default function LiveSessionPage() {
                       <div className={`w-2 h-2 rounded-full ${p.isOnline ? "bg-green-400" : "bg-gray-600"}`} />
                       <div className="text-sm">{p.name}</div>
                     </div>
-                    <div className={`text-xs px-2 py-0.5 rounded ${p.role === "instructor" ? "bg-teal-600 text-black" : "bg-gray-700 text-gray-200"}`}>
+                    <div
+                      className={`text-xs px-2 py-0.5 rounded ${
+                        p.role === "instructor" ? "bg-teal-600 text-black" : "bg-gray-700 text-gray-200"
+                      }`}
+                    >
                       {p.role}
                     </div>
                   </div>
@@ -297,16 +330,49 @@ export default function LiveSessionPage() {
                 </button>
               </form>
             </div>
+
+            {/* Resources & Previous Recordings */}
+            <div className="bg-gray-900 rounded-lg p-4">
+              <h3 className="font-semibold mb-2">Resources</h3>
+              {session.resources && session.resources.length > 0 ? (
+                <ul className="list-disc list-inside space-y-1">
+                  {session.resources.map((res, idx) => (
+                    <li key={idx}>
+                      <a href={res.url} target="_blank" className="text-teal-400 hover:underline">{res.title}</a>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-400 text-sm">No resources available</p>
+              )}
+
+              <h3 className="font-semibold mt-4 mb-2">Previous Sessions</h3>
+              {session.previousSessions && session.previousSessions.length > 0 ? (
+                <ul className="list-disc list-inside space-y-1">
+                  {session.previousSessions.map((rec, idx) => (
+                    <li key={idx}>
+                      <a href={rec.recordingUrl} target="_blank" className="text-teal-400 hover:underline">{rec.title}</a>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-400 text-sm">No previous sessions available</p>
+              )}
+            </div>
+
+            {/* Toast */}
+            {toast && (
+              <div
+                className={`fixed bottom-4 right-4 px-4 py-2 rounded ${
+                  toast.type === "success" ? "bg-green-600" : "bg-red-600"
+                }`}
+              >
+                {toast.message}
+              </div>
+            )}
           </aside>
         </div>
       </main>
-
-      {/* Toast */}
-      {toast && (
-        <div className={`fixed bottom-4 right-4 px-4 py-2 rounded ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}>
-          {toast.message}
-        </div>
-      )}
     </div>
   );
 }
