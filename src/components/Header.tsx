@@ -1,36 +1,32 @@
 import React, { useState, useCallback, useEffect, memo } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Globe, Users, BookOpen, Mail } from "lucide-react";
+import { Menu, X, Globe, Users, BookOpen, Mail, ShoppingBag } from "lucide-react";
 import { theme } from "../bright-gold/theme"; // 🎨 Import Bright Gold theme
 
 const Header = memo(() => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
 
-  const toggleMenu = useCallback(() => {
-    setIsMenuOpen((prev) => !prev);
-  }, []);
+  const toggleMenu = useCallback(() => setIsMenuOpen((prev) => !prev), []);
+  const closeMenu = useCallback(() => setIsMenuOpen(false), []);
 
-  const closeMenu = useCallback(() => {
-    setIsMenuOpen(false);
-  }, []);
-
-  // Prevent scroll when mobile menu is open
+  // Prevent background scroll when mobile menu is open
   useEffect(() => {
     document.body.style.overflow = isMenuOpen ? "hidden" : "auto";
   }, [isMenuOpen]);
 
-  // Define navigation structure
+  // ✅ Updated navigation links — added MarketPlace
   const navigation = [
     { name: "Home", href: "/", icon: Globe },
     { name: "About", href: "/about", icon: Users },
-    { name: "Divisions", href: "/divisions", icon: Globe },
+    { name: "Divisions/Services", href: "/divisions", icon: Globe },
     { name: "Enrollment", href: "/enrollment", icon: Users },
     { name: "Learning Platform", href: "/learning", icon: BookOpen },
+    { name: "TUAN MarketPlace", href: "/tuan-market-place", icon: ShoppingBag },
     { name: "Contact", href: "/contact", icon: Mail },
   ];
 
-  // Navigation links (reusable)
+  // Reusable NavLinks component
   const NavLinks = ({ onClick }: { onClick?: () => void }) => (
     <>
       {navigation.map(({ name, href, icon: Icon }) => (
@@ -39,8 +35,8 @@ const Header = memo(() => {
           to={href}
           onClick={onClick}
           className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-            location.pathname.startsWith(href)
-              ? "bg-teal-600 text-white shadow-sm"
+            location.pathname === href
+              ? "bg-teal-600 text-white shadow-md"
               : "text-gray-900 hover:bg-teal-600 hover:text-white"
           }`}
         >
@@ -61,9 +57,8 @@ const Header = memo(() => {
       className="shadow-md sticky top-0 z-50 transition-all duration-300"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header Content */}
+        {/* Logo Section */}
         <div className="flex justify-between items-center py-3">
-          {/* Logo Section */}
           <Link to="/" className="flex items-center mr-8">
             <img
               src="/logo-black.png"
@@ -76,11 +71,11 @@ const Header = memo(() => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-6">
+          <nav className="hidden md:flex space-x-4">
             <NavLinks />
           </nav>
 
-          {/* Mobile Menu Toggle */}
+          {/* Mobile Menu Button */}
           <button
             onClick={toggleMenu}
             aria-label="Toggle navigation menu"
