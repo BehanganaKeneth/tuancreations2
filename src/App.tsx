@@ -11,6 +11,7 @@ const EnrollmentPage = React.lazy(() => import("./pages/EnrollmentPage"));
 const LearningPlatform = React.lazy(() => import("./pages/LearningPlatform"));
 const ContactPage = React.lazy(() => import("./pages/ContactPage"));
 const LiveSessionPage = React.lazy(() => import("./pages/LiveSessionPage"));
+const TUANMarketPlacePage = React.lazy(() => import("./pages/TUANMarketPlacePage"));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -35,6 +36,7 @@ function App() {
             <Route path="/learning" element={<LearningPlatform />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/live-session" element={<LiveSessionPage />} />
+            <Route path="/tuan-market-place" element={<TUANMarketPlacePage />} />
           </Routes>
         </Suspense>
       </Layout>
