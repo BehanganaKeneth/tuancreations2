@@ -6,8 +6,8 @@ const TUANMarketPlacePage: React.FC = () => {
     {
       name: "TUAN Creations (Africa) Ltd",
       description:
-        "Creators of Africa-inspired digital solutions — software, telecom, and creative technology.",
-      category: "Software & Media",
+        "Creators of Africa-inspired digital solutions - software, telecom, media and creative technology.",
+      category: "Software, Telecom & Media",
       image: "/logo-black.png",
     },
     {
