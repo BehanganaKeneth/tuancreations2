@@ -12,7 +12,6 @@ const ContactPage = React.lazy(() => import("./pages/ContactPage"));
 const LiveSessionPage = React.lazy(() => import("./pages/LiveSessionPage"));
 const TUANMarketPlacePage = React.lazy(() => import("./pages/TUANMarketPlacePage"));
 const TuanNewsPage = React.lazy(() => import("./pages/TuanNewsPage"));
-const LiveClassPage = React.lazy(() => import("./pages/LiveClassPage")); // optional
 
 // ✅ Loading placeholder (used during lazy load)
 const LoadingSpinner = () => (
