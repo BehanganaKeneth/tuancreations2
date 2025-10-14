@@ -2,6 +2,8 @@ import React, { Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LiveClassPage from "./pages/LiveClassPage";
 import { Layout } from "./bright-gold"; // 🎨 Use Bright Gold theme layout
+import TuanNewsPage from "./pages/TuanNewsPage";
+
 
 // Lazy load pages for better performance
 const HomePage = React.lazy(() => import("./pages/HomePage"));
@@ -37,6 +39,7 @@ function App() {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/live-session" element={<LiveSessionPage />} />
             <Route path="/tuan-market-place" element={<TUANMarketPlacePage />} />
+            <Route path="/news" element={<TuanNewsPage />} />
           </Routes>
         </Suspense>
       </Layout>
