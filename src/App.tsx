@@ -39,7 +39,6 @@ function App() {
 
             {/* 🔹 Live Sessions */}
             <Route path="/live-session" element={<LiveSessionPage />} />
-            <Route path="/live-class" element={<LiveClassPage />} />
 
             {/* 🔹 TUAN Platform Extensions */}
             <Route path="/tuan-market-place" element={<TUANMarketPlacePage />} />
