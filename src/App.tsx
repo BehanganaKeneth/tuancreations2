@@ -1,11 +1,8 @@
 import React, { Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import LiveClassPage from "./pages/LiveClassPage";
-import { Layout } from "./bright-gold"; // 🎨 Use Bright Gold theme layout
-import TuanNewsPage from "./pages/TuanNewsPage";
+import { Layout } from "./bright-gold"; // 🎨 Bright Gold Theme Layout
 
-
-// Lazy load pages for better performance
+// ✅ Lazy load all pages for performance
 const HomePage = React.lazy(() => import("./pages/HomePage"));
 const AboutPage = React.lazy(() => import("./pages/AboutPage"));
 const DivisionsPage = React.lazy(() => import("./pages/DivisionsPage"));
@@ -14,8 +11,10 @@ const LearningPlatform = React.lazy(() => import("./pages/LearningPlatform"));
 const ContactPage = React.lazy(() => import("./pages/ContactPage"));
 const LiveSessionPage = React.lazy(() => import("./pages/LiveSessionPage"));
 const TUANMarketPlacePage = React.lazy(() => import("./pages/TUANMarketPlacePage"));
+const TuanNewsPage = React.lazy(() => import("./pages/TuanNewsPage"));
+const LiveClassPage = React.lazy(() => import("./pages/LiveClassPage")); // optional
 
-// Loading component
+// ✅ Loading placeholder (used during lazy load)
 const LoadingSpinner = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
     <div className="text-center">
@@ -31,15 +30,33 @@ function App() {
       <Layout>
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>
+            {/* 🔹 Main Pages */}
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/divisions" element={<DivisionsPage />} />
             <Route path="/enrollment" element={<EnrollmentPage />} />
             <Route path="/learning" element={<LearningPlatform />} />
             <Route path="/contact" element={<ContactPage />} />
+
+            {/* 🔹 Live Sessions */}
             <Route path="/live-session" element={<LiveSessionPage />} />
+            <Route path="/live-class" element={<LiveClassPage />} />
+
+            {/* 🔹 TUAN Platform Extensions */}
             <Route path="/tuan-market-place" element={<TUANMarketPlacePage />} />
             <Route path="/news" element={<TuanNewsPage />} />
+
+            {/* Optional: 404 Fallback */}
+            <Route
+              path="*"
+              element={
+                <div className="flex items-center justify-center h-screen">
+                  <h1 className="text-3xl font-bold text-gray-700">
+                    404 — Page Not Found
+                  </h1>
+                </div>
+              }
+            />
           </Routes>
         </Suspense>
       </Layout>
