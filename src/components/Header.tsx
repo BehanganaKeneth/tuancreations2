@@ -23,6 +23,7 @@ const Header = memo(() => {
     { name: "Enrollment", href: "/enrollment", icon: Users },
     { name: "Learning Platform", href: "/learning", icon: BookOpen },
     { name: "TUAN MarketPlace", href: "/tuan-market-place", icon: ShoppingBag },
+    { name: "News / Blog", href: "/news", icon: BookOpen },
     { name: "Contact", href: "/contact", icon: Mail },
   ];
 
