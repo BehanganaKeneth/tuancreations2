@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "../components/ui/card"; // ✅ Use relative import if @ alias missing
 
 const TuanNewsPage: React.FC = () => {
   const posts = [
