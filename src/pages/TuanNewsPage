@@ -1,88 +1,84 @@
 import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
-
-const blogPosts = [
-  {
-    id: 1,
-    title: "African Startups Driving Innovation in FinTech",
-    date: "October 10, 2025",
-    author: "TUAN Editorial Team",
-    image: "/images/fintech-africa.jpg",
-    excerpt:
-      "Across the continent, African startups are transforming the way people save, borrow, and trade — all powered by technology.",
-  },
-  {
-    id: 2,
-    title: "How TUAN MarketPlace is Connecting African Tech Companies",
-    date: "October 12, 2025",
-    author: "TUAN Insights",
-    image: "/images/tuan-marketplace.jpg",
-    excerpt:
-      "The TUAN MarketPlace aims to create a unified space where innovators and enterprises meet to trade solutions and sign tech contracts online.",
-  },
-  {
-    id: 3,
-    title: "Youth-Led Digital Transformation Across Africa",
-    date: "September 30, 2025",
-    author: "TUAN Africa Desk",
-    image: "/images/youth-digital.jpg",
-    excerpt:
-      "Africa’s young innovators are reshaping industries through creativity, collaboration, and purpose-driven entrepreneurship.",
-  },
-];
+import { Card, CardContent } from "@/components/ui/card";
 
 const TuanNewsPage: React.FC = () => {
-  return (
-    <section className="bg-gray-50 min-h-screen py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header Section */}
-        <div className="text-center mb-12">
-          <motion.h1
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-4xl md:text-5xl font-extrabold text-gray-900"
-          >
-            TUAN News & Blog
-          </motion.h1>
-          <p className="mt-3 text-lg text-gray-600">
-            Stories and insights from Africa’s leading tech innovators and digital thinkers.
-          </p>
-        </div>
+  const posts = [
+    {
+      id: 1,
+      title: "Empowering Africa’s Digital Future",
+      excerpt:
+        "TUAN Creations (Africa) LTD leads the way in uniting African tech enterprises for a shared digital economy.",
+      image: "/images/africa-digital.jpg",
+      date: "October 2025",
+    },
+    {
+      id: 2,
+      title: "Tech Innovations Across Africa",
+      excerpt:
+        "Discover how local startups are shaping industries and driving innovation from Kampala to Kigali.",
+      image: "/images/innovation.jpg",
+      date: "September 2025",
+    },
+    {
+      id: 3,
+      title: "The TUAN Marketplace Launch",
+      excerpt:
+        "A new online hub where African tech companies can showcase their products and connect with corporate clients.",
+      image: "/images/marketplace.jpg",
+      date: "August 2025",
+    },
+  ];
 
-        {/* Blog Grid */}
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {blogPosts.map((post, index) => (
-            <motion.div
-              key={post.id}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.2 }}
-            >
-              <Card className="overflow-hidden shadow-lg rounded-2xl bg-white hover:shadow-xl transition-shadow">
-                <img
-                  src={post.image}
-                  alt={post.title}
-                  className="w-full h-48 object-cover"
-                />
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2 hover:text-teal-600 cursor-pointer">
-                    {post.title}
-                  </h3>
-                  <p className="text-sm text-gray-500 mb-3">
-                    {post.date} • {post.author}
-                  </p>
-                  <p className="text-gray-700 text-sm leading-relaxed">
-                    {post.excerpt}
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
+  return (
+    <div className="min-h-screen bg-gray-50 pt-10 pb-16">
+      {/* Page Header */}
+      <section className="text-center mb-12">
+        <motion.h1
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-4xl md:text-5xl font-extrabold text-gray-900"
+        >
+          TUAN News & Blog
+        </motion.h1>
+
+        <p className="mt-3 text-lg text-gray-600">
+          Stories and insights from Africa's leading tech innovators and digital thinkers.
+        </p>
+      </section>
+
+      {/* Blog Posts */}
+      <section className="max-w-7xl mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {posts.map((post) => (
+          <motion.div
+            key={post.id}
+            whileHover={{ scale: 1.03 }}
+            className="shadow-lg rounded-2xl bg-white overflow-hidden hover:shadow-xl transition-shadow"
+          >
+            <img
+              src={post.image}
+              alt={post.title}
+              className="w-full h-48 object-cover"
+            />
+            <Card className="border-none shadow-none">
+              <CardContent className="p-5">
+                <p className="text-sm text-yellow-600 font-medium mb-1">
+                  {post.date}
+                </p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  {post.title}
+                </h3>
+                <p className="text-gray-700 mb-4">{post.excerpt}</p>
+                <button className="text-yellow-700 font-semibold hover:underline">
+                  Read more →
+                </button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </section>
+    </div>
   );
 };
 
