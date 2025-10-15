@@ -12,9 +12,10 @@ const ContactPage = React.lazy(() => import("./pages/ContactPage"));
 const LiveSessionPage = React.lazy(() => import("./pages/LiveSessionPage"));
 const TUANMarketPlacePage = React.lazy(() => import("./pages/TUANMarketPlacePage"));
 const TuanNewsPage = React.lazy(() => import("./pages/TuanNewsPage"));
+const TuanLiveProgramsPage = React.lazy(() => import("./pages/TuanLiveProgramsPage")); // ✅ NEW PAGE
 
-// ✅ Loading placeholder (used during lazy load)
-const LoadingSpinner = () => (
+// ✅ Loading placeholder (while components are lazy-loaded)
+const LoadingSpinner: React.FC = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
     <div className="text-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
@@ -23,13 +24,13 @@ const LoadingSpinner = () => (
   </div>
 );
 
-function App() {
+const App: React.FC = () => {
   return (
     <Router>
       <Layout>
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>
-            {/* 🔹 Main Pages */}
+            {/* 🏠 Main Pages */}
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/divisions" element={<DivisionsPage />} />
@@ -37,18 +38,17 @@ function App() {
             <Route path="/learning" element={<LearningPlatform />} />
             <Route path="/contact" element={<ContactPage />} />
 
-            {/* 🔹 Live Sessions */}
+            {/* 🎥 Live & Media Pages */}
             <Route path="/live-session" element={<LiveSessionPage />} />
-
-            {/* 🔹 TUAN Platform Extensions */}
+            <Route path="/tuan-live" element={<TuanLiveProgramsPage />} /> {/* ✅ TUAN OnlineTV Live Programs */}
             <Route path="/tuan-market-place" element={<TUANMarketPlacePage />} />
             <Route path="/news" element={<TuanNewsPage />} />
 
-            {/* Optional: 404 Fallback */}
+            {/* 🚫 404 Fallback Page */}
             <Route
               path="*"
               element={
-                <div className="flex items-center justify-center h-screen">
+                <div className="flex items-center justify-center h-screen bg-gray-50">
                   <h1 className="text-3xl font-bold text-gray-700">
                     404 — Page Not Found
                   </h1>
@@ -60,6 +60,6 @@ function App() {
       </Layout>
     </Router>
   );
-}
+};
 
 export default App;
